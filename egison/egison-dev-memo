@@ -1,0 +1,99 @@
+matherの定義について
+
+somethingが唯一の組み込みのマッチャー
+
+mod
+(test (match-all 14 (mod 13) [,27 <Ok>]))
+(test (match-all 14 (mod 13) [$x x]))
+
+
+自然数の全てのペアを列挙
+(define $nats {0 @(map (+ 1 $) nats)})
+(test (take 10 (match-all nats (multiset integer) [<cons $m <cons $n _>> [m n]])))
+
+
+MState [stack : {[pattern : ..
+                  target  : ..
+                  matcher : ..]}]
+       [env : env]
+       [result : {}]
+
+一つのMStateから複数のMStateへreductionされる(これはmathcerの規則により定義されている)
+
+
+-- 例 --
+(define $integer-tree
+  (matcher
+    {[,$val []
+      {[$tgt (match [val tgt] [integer-tree integer-tree]
+               {[[<leaf $n> <leaf ,n>] {[]}]
+                [[<node $l $r> <node ,l ,r>] {[]}]
+                [_ {}]})]}]
+     [<leaf $> [integer]
+      {[<Leaf $n> {n}]
+       [_ {}]}]
+     [<node $ $> [integer-tree integer-tree]
+      {[<Node $l $r> {[l r]}]
+       [_ {}]}]
+     [$ [something]
+      {[$tgt {tgt}]}]}))
+
+
+(match-all <Node <Leaf 3> <Node <Leaf 4> <Leaf 5>>> integer-tree [<node <leaf $n> <node _ _>> n])
+
+
+-- init --
+MState [stack : {[pattern : <node <leaf $n> <node _ _>>
+                  target  : <Node <Leaf 3> <Node <Leaf 4> <Leaf 5>>>
+                  matcher : integer-tree ]}]
+       [env : env]
+       [result : {}]
+
+-- reduction.. --
+まずpattern式自体をmatherに従ってpattern-matchする。
+
+<node <leaf $n> <node _ _>>
+ --
+{[,$val []                               -- (1)
+      {[$tgt (match [val tgt] [integer-tree integer-tree]
+               {[[<leaf $n> <leaf ,n>] {[]}]
+                [[<node $l $r> <node ,l ,r>] {[]}]
+                [_ {}]})]}]
+ [<leaf $> [integer]                     -- (2)
+    {[<Leaf $n> {n}]
+       [_ {}]}]
+ [<node $ $> [integer-tree integer-tree] -- (3)
+      {[<Node $l $r> {[l r]}]
+       [_ {}]}]
+ [$ [something]                          -- (4)
+      {[$tgt {tgt}]}]}
+
+(3)にマッチして
+新たなスタックを２つ作る (<node $ $> のドル記号に分だけ)
+ p: integer-tree
+ t: ..
+ m: <leaf $n>
+
+ p: integer-tree
+ t: ..
+ m: <node _ _>
+
+ターゲットの組み合わせ分だけ、MStateを作る。(それぞれのMState内で２つのスタックを持つ)
+可能なターゲットの組み合わせは値のパターンマッチで得られる。
+<Node <Leaf 3> <Node <Leaf 4> <Leaf 5>>>
+--
+{[<Node $l $r> {[l r]}] -- (1)
+ [_            {}]}     -- (2)
+
+ここでは(1)がひっかかって、
+新たなターゲットの組みの候補{[<Leaf 3> <Node <Leaf 4> <Leaf 5>>]}が得られる。(ターゲットの組み合わせ自体は1通りのみ。つまりMStateはひとつ)
+
+stack1
+ p: integer-tree
+ t: <Leaf 3>
+ m: <leaf $n>
+
+stack2
+ p: integer-tree
+ t: <Node <Leaf 4> <Leaf 5>>
+ m: <node _ _>

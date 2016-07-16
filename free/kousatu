@@ -1,0 +1,134 @@
+-- free monad version (but, can't using dorec) --
+-- type LangM a = LangMT Identity a
+-- type LangMT m = FreeT LangF m
+-- 
+-- data LangF next = FreshL (Int -> (next, Int))
+--                 | ErrorL LangError
+-- 
+-- instance Functor LangF where
+--   fmap f (FreshL x) = FreshL $ \i -> let (n, i') = x i in (f n, i')
+--   fmap f (ErrorL e) = ErrorL e
+--   
+-- runLangMT :: Monad m => LangMT m a -> m (Either LangError a)
+-- runLangMT fm = sub fm 0
+--   where sub fm i =
+--           do ff <- runFreeT fm
+--              case ff of
+--                Pure a          -> return $ Right a
+--                Free (FreshL x) -> let (x', i') = x i in sub x' i'
+--                Free (ErrorL e) -> return $ Left e
+-- 
+-- freshGen :: Monad m => LangMT m Int
+-- freshGen = do i <- myget
+--               myput (i+1)
+--               return i
+-- myget :: Monad m => LangMT m Int
+-- myget = FreeT . return . Free . FreshL $ \i -> (FreeT . return . Pure $ i, i)
+-- myput :: Monad m => Int -> LangMT m ()
+-- myput i = FreeT . return . Free . FreshL $ \_ -> (FreeT . return . Pure $ (), i)
+--   
+-- throwLangError :: Monad m => LangError -> LangMT m a
+-- throwLangError = FreeT . return . Free . ErrorL 
+-- 
+-- instance MonadFix m => MonadFix (FreeT LangF m) where
+-- --   mfix f = FreeT $ mfix recf
+-- --     where -- rec :: (FreeF LangF a (FreeT LangF m a)) -> m (FreeF LangF a (FreeT LangF m a))
+-- --           recf (Pure x)          = runFreeT $ f x
+-- --           recf (Free (FreshL g)) = return . Free . FreshL $ \i -> let (fx, i') = g i
+-- --                                                                       fx' = FreeT (recf =<< runFreeT fx)
+-- --                                                                   in (fx', i')
+-- --           recf (Free (ErrorL e)) = error "Free mfix error"
+--           
+-- -- 不可反駁な感じにしたい
+-- --  mfix f = FreeT $ mfix (\a -> case a of
+-- --                            Pure x          -> runFreeT $ f x
+-- --                            Free (FreshL g) -> error "Free mfix error"
+-- --                            Free (ErrorL e) -> error "Free mfix error")
+--           
+--   mfix f = FreeT $ mfix (\a -> runFreeT $ f $ case a of
+--                             Pure x          -> x
+--                             Free (FreshL g) -> error "mfix error"
+--                             Free (ErrorL e) -> error "mfix error")
+-- 
+-- ex0 = do rec x <- (do myput x; return 99)
+--          --x <- mfix (\x -> FreeT . return . Free . FreshL $ \_ -> (FreeT . return . Pure $ 99, x))
+--          lift $ print x
+--          x' <- myget
+--          lift $ print x'
+{-         
+x <- mfix (\x -> FreeT . return . Free . FreshL $ \_ -> (FreeT . return . Pure $ 99, x))
+
+fix (\a -> runFreeT $ (\x -> FreeT . return . Free . FreshL $ \_ -> (FreeT . return . Pure $ 99, x)) 
+                    $ case a of ..)
+
+let a = .. a in a
+
+let a = runFreeT $ (\x -> FreeT . return . Free . FreshL $ \_ -> (FreeT . return . Pure $ 99, x)) 
+                 $ case a of .. 
+in a
+
+let a = runFreeT $ FreeT . return . Free . FreshL $ \ -> (FreeT . return . Pure $ 99, casea)
+in a
+
+x <- a
+
+
+
+-}
+
+--
+--FreeT $ fix recf
+--FreeT $ let x = recf x in x
+--        let x = 
+
+{-
+Int -> m (FreeF LangF a (FreeT LangF m a))
+m (Int -> (FreeF LangF a (FreeT LangF m a)))
+fx :: FreeT LangF m a
+runFreeT fx :: m (FreeF LangF a (FreeT LangF m a))
+
+f :: a -> FreeT LangF m a
+          ^^^^^^^^^^^^^^^  m (FreeF LangF a (FreeT LangF m a))
+                              ^^^^^
+                              | Pure a
+                              | Free (FreshL (Int -> (FreeT LangF m a, Int))
+                                     (ErrorL LangError)
+g :: Int -> (FreeT LangF m a, Int)
+\i -> mfix $ \~(fx, _) ->
+               (f a, i) -> m (f a, i)
+(FreeT LangF m a, Int) -> m (FreeT LangF m a, Int)
+\~(fa, _) -> runFreeT fa :: m (FreeF LangF a (FreeT LangF m a))
+             g i         :: (FreeT LangF m a, Int)
+-}
+
+{-
+f :: a -> StateT s m a
+          ^^^^^^^^^^^^ s -> m (a, s)
+instance (MonadFix m) => MonadFix (StateT s m) where
+    mfix f = StateT $ \s -> mfix $ \ ~(a, _) -> runStateT (f a) s
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  (a, s) -> m (a, s)
+           = StateT $ \s -> fix $ \~(a, _) -> (f a) s
+do rec x <- f x
+
+do x <- mfix f
+
+f :: a -> State s a
+f x = do put x
+         return 1
+
+f x = \_ -> ((), x) 
+      \s -> (1, s)
+    = \_ -> (1, x)
+
+fix \~(a, _) -> (1, x)
+=> let y = (\~(a, _) -> (1, a)) y in y
+=> (1, 1)
+
+f :: a -> StateT s m a
+
+instance (MonadFix m, Error e) => MonadFix (ErrorT e m) where
+    mfix f = ErrorT $ mfix $ \a -> runErrorT $ f $ case a of
+        Right r -> r
+        _       -> error "empty mfix argument"
+-}
+

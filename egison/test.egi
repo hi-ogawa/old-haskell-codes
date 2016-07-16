@@ -1,0 +1,76 @@
+#|
+(define $fib
+  (lambda [$n] 
+    (match n integer
+      {[,0 0]
+       [,1 1]
+       [$n (+ (fib (- n 1)) (fib (- n 2)))]
+       }
+      )
+    ))
+|#
+
+(define $fibs {1 1 @(match fibs (list integer) {[<cons ,1 $tl> (zipwith (+ $ $) fibs tl)]})})
+
+(test (take 10 fibs))
+
+(define $zipwith
+  (lambda [$f $l1 $l2]
+    (match [l1 l2] [(list something) (list something)]
+      {[(| [<nil> _] [_ <nil>]) {}] ; or-pattern
+       [[<cons $h1 $l3> <cons $h2 $l4>] {(f h1 h2) @(zipwith f l3 l4)}]}
+      )
+    )
+  )
+
+(define $either
+  (lambda [$a $b]
+    (matcher
+      {[,$val []
+        {[$tgt {(match [val tgt] [(either a b) (either a b)]
+                 {[[<left $l> <left ,l>] {[]}]
+                  [[<right $r> <right ,r>] {[]}]
+                  [[_ _] {}]})}]}
+        ]
+       [<left $> [a]
+        {[<Left $l> {[l]}]
+         [_ {}]}]
+       [<right $> [b]
+        {[<Right $l> {[l]}]
+         [_ {}]}]
+       [$ [something]
+        {[$tgt {tgt}]}]
+       }
+      )
+    )
+  )
+
+(test (match <Left <Right {1 2 3}>> (either (either integer (multiset integer)) integer)
+        {[<left <left ,1>>  <A>]
+         [<right ,1>        <B>]
+         [<left <right <cons $n <cons _ <cons ,(+ n 2) <cons _ _>>>>>> <C>]
+         [<left <right <cons $n <cons _ <cons ,(+ n 2) _>>>>> <D>]
+         }
+        )
+      )
+
+;; 型的に複雑そうになる
+;; matcherをもらってobjectを返す関数
+;; 引数mとして許されるのは、<cons ..>とゆうprimitive-ppを持つmatcherのみである。(型クラス的な制限??)
+(define $f (lambda [$m] (match-all {1 2 3 4 5} m
+                          [<cons $n $m> [n m]] 
+                          )
+             )
+  )
+
+;; 逆に
+;; objectをもらってmatcherを返す関数(mod matcher)
+#|
+(define $g 
+  (lambda [$i]
+    (matcher
+      {[,$val []
+        {[$tgt ()]}
+        ]
+       }
+|#

@@ -1,0 +1,22 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+ <head>
+  <title>Index of /darcs/ian/nhc98/src/libraries/parsec/examples/Mondrian</title>
+ </head>
+ <body>
+<h1>Index of /darcs/ian/nhc98/src/libraries/parsec/examples/Mondrian</h1>
+<table><tr><th><img src="/icons/blank.gif" alt="[ICO]"></th><th><a href="?C=N;O=A">Name</a></th><th><a href="?C=M;O=A">Last modified</a></th><th><a href="?C=S;O=A">Size</a></th><th><a href="?C=D;O=D">Description</a></th></tr><tr><th colspan="5"><hr></th></tr>
+<tr><td valign="top"><img src="/icons/back.gif" alt="[DIR]"></td><td><a href="/darcs/ian/nhc98/src/libraries/parsec/examples/">Parent Directory</a></td><td>&nbsp;</td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="Main.hs">Main.hs</a></td><td align="right">28-Feb-2004 17:43  </td><td align="right">262 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="Makefile">Makefile</a></td><td align="right">28-Feb-2004 17:46  </td><td align="right">445 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="MonParser.hs">MonParser.hs</a></td><td align="right">31-Jul-2003 18:45  </td><td align="right">8.3K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="Mondrian.hs">Mondrian.hs</a></td><td align="right">31-Jul-2003 18:45  </td><td align="right">684 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="Prelude.m">Prelude.m</a></td><td align="right">31-Jul-2003 18:45  </td><td align="right">912 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="Pretty.hs">Pretty.hs</a></td><td align="right">31-Jul-2003 18:45  </td><td align="right">2.8K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="SimpleMondrianPrinter.hs">SimpleMondrianPrinter.hs</a></td><td align="right">31-Jul-2003 18:45  </td><td align="right">4.7K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="Utils.hs">Utils.hs</a></td><td align="right">31-Jul-2003 18:45  </td><td align="right">1.5K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="test.m">test.m</a></td><td align="right">31-Jul-2003 18:45  </td><td align="right">239 </td><td>&nbsp;</td></tr>
+<tr><th colspan="5"><hr></th></tr>
+</table>
+<address>Apache/2.2.16 (Debian) Server at urchin.earth.li Port 80</address>
+</body></html>

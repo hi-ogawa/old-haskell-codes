@@ -1,0 +1,212 @@
+- primitive data type -
+int
+float
+bool
+list
+pair
+
+
+- syntax -
+e ::= e + e | e - e | ..
+    | not e | e && e | e || e
+    | if e then e else e
+    | \pat -> e
+    | let pat = e in e
+    | e e
+    | x
+
+-- semantics --
+
+
+
+-- 目的 --
+これを通す処理系を作りたい
+main = take' 10 fib'
+
+fib' = Cons 1 (Cons 1 (zipWith' (+) fib' (tail' fib')))
+
+take' = \n -> \ls -> 
+  if n <= 0
+  then Nil
+  else case ls of
+    Nil        -> Nil
+    Cons h ls' -> Cons h (take' (n-1) ls')
+
+tail' = \ls -> 
+  case ls of
+    Nil         -> error "!!"
+    Cons h ls'  -> ls'
+
+zipWith' = \f -> \l1 -> \l2 ->
+  case l1 of
+    Nil         -> Nil
+    Cons h1 l1' -> 
+      case l2 of
+        Nil             -> Nil
+        Cons h2 l2'     -> Cons (f h1 h2) (zipWith' f l1' l2')
+
+
+-- call-by-name test --
+primitiveはintegerのみ。
+
+M = x | MN | \x -> M | n
+E = [] | EM
+I = (\x -> M)N
+
+E[(\x -> M)N]  =>  E[[N/x]M]
+
+基本的には以下のような簡約を目指す (この戦略では必ず最左の二項がIになる(型チェックを通れば)??)
+(\k -> k (\x -> x + 1) undefined 2) (\x -> \y -> x)
+ ^^                                 ^^^^^^^^^^^^^^^
+=> (\x -> \y -> x) (\x -> x + 1) undefined 2
+    ^^             ^^^^^^^^^^^^^
+=> (\y -> (\x -> x + 1)) undefined 2
+    ^^                   ^^^^^^^^^
+=> (\x -> x + 1) 2
+    ^^          ^^^
+=> 2 + 1
+
+
+名前の衝突に注意
+(\k -> \x -> k 1 x) (\x -> \y -> x) 2
+ ^^                 ^^^^^^^^^^^^^^^
+=> (\x -> (\x -> \y -> x) 1 x) 2
+
+型検査は後回し<-
+
+-- これにリストを追加したい --
+M = x | M1M2 | \x -> M | n | Cons M1 M2 | Nil | True | False
+  | case M1 (h, l) M2 M3
+  | if M1 then M2 else M3
+
+E = [] | EM | case E' (h, l) M2 M3 | if E then M2 else M3
+  | Cons E M | Cons n E
+  | E + M | n + E | ..
+
+E' = [] | EM | case E' (h, l) M2 M3 | if E then M2 else M3
+   | E + M | n + E | ..
+
+V = Cons M1 M2 | Nil
+  | True | False
+  | n
+  | \x -> M
+(これがWHNFだったり?)
+
+I = (\x -> M1)M2
+  | case V (h, l) M2 M3
+  | if V then M1 else M2
+  | x
+  | n1 + n2 | ..
+  | n M | (Cons n v) M | Nil M | + (\x -> M) M .. etc   (実行時エラー)
+
+この文脈の設定だと、case文の簡約が一意に定まらない
+例えば、
+case (Cons 1 nil) (h, l) 2 3
+に対して、
+E1 = case [] (h, l) 2 3
+I1 = Cons 1 nil
+E2 = []
+I2 = case (Cons 1 nil) (h, l) 2 3
+と2つ種類生じる。(とりあえず、こうゆう場合にはE2[I2]をとるような実装をする)
+
+
+(E[(\x -> M1)M2], s)  =>  (E[M1], s{x : (M1, s)})
+
+(E[case V (h, l) M2 M3], s)  => (if V is nil)        (M2, s)
+                                (if V is Cons N1 N2) (M3, s{h:(N1, s), l:(N2, s)})
+                                (otherwise)          ERROR
+
+(E[if V then M2 else M3], s) => (if V is True)    (M2, s)
+                                (if V is False)   (M3, s)
+                                (otherwise)       ERROR
+
+(E[x], s) => (E[M], s)   where (M, s') = s x      (名前空間の注意(最初にα変換しとけば大丈夫)) (再帰は大丈夫??)
+
+(E[n1 + n2], s) => (E[n], s) where n = n1 + n2
+
+..etc
+
+
+↑これはボツ。
+
+-- big-step operational semantics (call-by-name) --
+M = x | M1M2 | \x -> M | n | Cons M1 M2 | Nil | True | False
+  | let x = M1 in M2
+  | case M1 (h, l) M2 M3
+  | if M1 then M2 else M3
+  | (+) M1 M2 | (-) M1 M2 | .. | (<) M1 M2 | (==) M1 M2 | ..
+
+
+<reduction>
+(term, state) ->* whnf_object
+
+<term>: M
+<state>: map of (variable -> (term, state))
+<whnf_object>: 
+
+- primitive -
+
+---------------
+(n, s) -> <n>
+
+----------------------
+(Nil, s) -> <Nil>
+
+-----------------------
+(Cons e1 e2, s) -> <Cons e1 e2, s>
+
+---------------------
+(True, s) -> <True>
+
+--------------------
+(False, s) -> <False>
+
+
+- let -
+(e2, s{x : (e1, s{x..}) }) ->* e'
+--------------------------------
+(let x = e1 in e2, s) -> e'
+
+- mutual recursion (let .. and ..) -
+(e3, s{f : (e1, s{f,g}), g : (e2, s{f,g})}) ->* e'
+---------------------------------------------
+(let f = e1 and g = e2 in e3, s) -> e'
+
+
+- variable -
+(e, s') ->* e'   where (e, s') = s(x)
+-------------
+(x, s) -> e'
+
+- lambda abs -
+-------------------------
+(\x -> e, s) -> <x, e, s>
+
+- apply -
+ (e1, s) ->* <x, e, s'>                otherwise e' is ERROR
+ (e , s'{x : (e2, s)}) ->* e'
+-------------------------------
+(e1 e2, s) -> e'
+
+- case -
+(e1, s) ->* <Nil, s''>          ==>> (e2, s) ->* e'
+(e1, s) ->* <Cons e11 e12, s'>  ==>> (e3, s{h: (e11, s'), l: (e12, s')})   ->* e'
+otherwise e' is ERROR
+------------------------------------
+(case e1 (h, l) e2 e3, s) -> e'
+
+- if -
+(e1, s) ->* True  ==> (e2, s) ->* e'
+(e1, s) ->* False ==> (e3, s) ->* e'
+otherwise e' is ERROR
+----------------------------------
+(if e1 then e2 else e3, s) -> e'
+
+- primi arithmetic -
+(e1, s) ->* n1
+(e2, s) ->* n2
+--------------------
+((+) e1 e2, s) -> <n1+n2>
+
+
+(to print int-list <Cons e1 e2, s> in top level, we provide lazy printing system.)
